@@ -2005,6 +2005,11 @@ babel-plugin-polyfill-regenerator@^0.3.1:
   dependencies:
     "@babel/helper-define-polyfill-provider" "^0.3.1"
 
+babylonjs@^5.13.3:
+  version "5.13.3"
+  resolved "https://registry.yarnpkg.com/babylonjs/-/babylonjs-5.13.3.tgz#99032065e2205e7f330a7a4e435f56be2acfacf4"
+  integrity sha512-+bHSrgvMba5/2EKUhjbFPTQMRXFAH556bBbhl1CWin3YtseNsw+7RSGn1hkJDL8ui1PHX52BgzEpqAAx2zHAhA==
+
 balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
@@ -4523,6 +4528,11 @@ path-type@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/path-type/-/path-type-4.0.0.tgz#84ed01c0a7ba380afe09d90a8c180dcd9d03043b"
   integrity sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==
+
+pde-engine@^0.4.0:
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/pde-engine/-/pde-engine-0.4.0.tgz#986715d2d4aba230a410e634d75af0a6d98692c3"
+  integrity sha512-xl12DSnarHQmC0YtxT3v0kA9IJJiUT6QsBm8PUEicHJJABRjGfSVUGM+t+ln6CYuYEQTkTpdE8/j70Xey94Qog==
 
 picocolors@^0.2.1:
   version "0.2.1"
