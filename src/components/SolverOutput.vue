@@ -1,19 +1,16 @@
 <template>
-  {{ solver.n }}
-  <canvas ref="coeffCanvas" width="800" height="800" />
-
-  <button @click="showHeightmap">Show heightmap</button>
-  {{ texture }}
-  <SolverVisualizer :heightmap="texture" v-if="texture" />
+  <div class="solver">
+    <canvas ref="coeffCanvas" width="800" height="800" />
+  </div>
 </template>
 
 <script>
-import  SolverVisualizer  from './SolverVisualizer.vue'
+// import SolverVisualizer from './SolverVisualizer.vue'
 import { defineComponent } from "vue"
 
 export default defineComponent({
   components: {
-    SolverVisualizer
+    // SolverVisualizer
   },
   props: ['solver'],
   data() {
@@ -60,7 +57,7 @@ export default defineComponent({
 
       this.ctx.scale(this.ctx.width / width, this.ctx.height / height)
       this.ctx.drawImage(newCanvas, 0, 0)
-      
+
       this.ctx.restore()
     },
     showHeightmap() {

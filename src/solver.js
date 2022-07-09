@@ -5,7 +5,7 @@ export class Solver {
     this.n = 0
     this.width = width
     this.height = height
-    this.coeffs = []
+    this.coeffs = new Array(width * height).fill(0)
 
     this.engine = new pdeEngine(specs)
     this.engine.setResolution(this.width, this.height)
