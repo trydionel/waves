@@ -7,37 +7,35 @@
 
 import * as THREE from 'three'
 
-const generateHeightmap = (solver) => {
-  const { width, height, coeffs } = solver
-  const heightmap = new ImageData(width, height)
-  const { data } = heightmap
-
-  for (let i = 0; i < coeffs.length; i++) {
-    const value = Math.floor(0.5 * (coeffs[i] + 255)) // clamp to [0,255]
-    data[4 * i + 0] = value
-    data[4 * i + 1] = value
-    data[4 * i + 2] = value
-    data[4 * i + 3] = 255
-  }
-
-  return heightmap
-}
-
 const createHeightmapMesh = (solver) => {
-  const heightmap = generateHeightmap(solver)
+  const { width, height, coeffs } = solver;
 
-  const texture = new THREE.Texture(heightmap)
-  texture.minFilter = THREE.NearestFilter
-  texture.needsUpdate = true
+  const color = new THREE.TextureLoader().load(
+    'textures/Wood066_1K_Color.jpg'
+  )
+  const roughness = new THREE.TextureLoader().load(
+    'textures/Wood066_1K_Roughness.jpg'
+  )
+  const displacement = new THREE.TextureLoader().load(
+    'textures/Wood066_1K_Displacement.jpg'
+  )
 
   const material = new THREE.MeshStandardMaterial({
-    color: 0xff0000,
-    displacementMap: texture,
-    displacementScale: 0.5,
-    displacementBias: -0.25
+    map: color,
+    roughnessMap: roughness,
+    displacementMap: displacement,
+    displacementScale: 0.01
   });
-  const geometry = new THREE.PlaneGeometry(1, 1, 512, 512);
+  const geometry = new THREE.PlaneGeometry(1, 1, width - 1, height - 1);
   const mesh = new THREE.Mesh(geometry, material);
+
+  const position = geometry.attributes.position;
+  position.usage = THREE.DynamicDrawUsage;
+
+  for ( let i = 0; i < position.count; i ++ ) {
+    const z = coeffs[i];
+    position.setZ( i, z );
+  }
 
   mesh.name = "Terrain";
   mesh.castShadow = mesh.receiveShadow = true;
@@ -47,9 +45,18 @@ const createHeightmapMesh = (solver) => {
 }
 
 const updateMesh = (solver, mesh) => {
-  const { displacementMap } = mesh.material
-  displacementMap.image = generateHeightmap(solver)
-  displacementMap.needsUpdate = true
+  const { coeffs } = solver
+  const { geometry } = mesh
+
+  const position = geometry.attributes.position;
+
+  for ( let i = 0; i < position.count; i ++ ) {
+    const z = coeffs[i];
+    position.setZ( i, z );
+  }
+
+  position.needsUpdate = true;
+  geometry.needsUpdate = true
 }
 
 export default {
@@ -58,6 +65,7 @@ export default {
   data() {
     return {
       // Don't register THREE elements with reactivity system!
+      helpers: false
     }
   },
   mounted() {
@@ -65,17 +73,23 @@ export default {
 
     this.scene = new THREE.Scene();
 
-    const distance = 1.25 / Math.sqrt(2);
-    this.camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 1, 1000);
-    this.camera.position.set(distance, 1, distance)
+    const azimuth = 35; // degrees
+    const distance = 1.25;
+    const cameraX = distance * Math.cos(azimuth * Math.PI / 180)
+    const cameraY = distance * Math.sin(azimuth * Math.PI / 180)
+    this.camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+    this.camera.position.set(cameraX, cameraY, 0)
     this.camera.lookAt(0, 0, 0)
 
-    const directionalLight = new THREE.DirectionalLight( 0xffffff, 10 );
+    const ambientLight = new THREE.AmbientLight( 0xffffff, 3 );
+    this.scene.add(ambientLight)
+
+    const directionalLight = new THREE.DirectionalLight( 0xffffff, 2 );
     directionalLight.castShadow = true
-    directionalLight.position.set(-4.4, 3.3, 2.2)
-    directionalLight.shadow.bias = -0.004
-    directionalLight.shadow.mapSize.width = 2048
-    directionalLight.shadow.mapSize.height = 2048
+    directionalLight.position.set(-4.4, 1, 2.2)
+    directionalLight.shadow.bias = -0.003
+    directionalLight.shadow.mapSize.width = 4096
+    directionalLight.shadow.mapSize.height = 4096
     directionalLight.shadow.camera.left = -5
     directionalLight.shadow.camera.right = 5
     directionalLight.shadow.camera.top = -2
@@ -84,8 +98,13 @@ export default {
     directionalLight.shadow.camera.far = 10
     this.scene.add( directionalLight );
 
-    const helper = new THREE.CameraHelper(directionalLight.shadow.camera)
-    this.scene.add(helper)
+    if (this.helpers) {
+      const helper = new THREE.CameraHelper(directionalLight.shadow.camera)
+      this.scene.add(helper)
+
+      const axesHelper = new THREE.AxesHelper( 100 );
+      this.scene.add( axesHelper );
+    }
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio)
@@ -96,9 +115,6 @@ export default {
 
     this.mesh = createHeightmapMesh(this.solver)
     this.scene.add(this.mesh)
-
-    const axesHelper = new THREE.AxesHelper( 100 );
-    this.scene.add( axesHelper );
 
     this.animate()
   },

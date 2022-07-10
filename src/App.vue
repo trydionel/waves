@@ -103,7 +103,7 @@ export default {
         this.solver.addSource(
           Math.floor(Math.random() * this.solver.width),
           Math.floor(Math.random() * this.solver.height),
-          Math.floor(Math.random() * 128 + 127) // max magnitude is 255
+          Math.random()
         )
       }
 
@@ -125,7 +125,8 @@ export default {
 .container {
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto fit-content;
+  grid-template-rows: 1fr auto;
+  width: 100vw;
   height: 100vh;
 }
 

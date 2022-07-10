@@ -44,7 +44,7 @@ export default defineComponent({
       const { data } = imageData
 
       for (let i = 0; i < coeffs.length; i++) {
-        const value = Math.floor(0.5 * (coeffs[i] + 255)) // clamp to [0,255]
+        const value = Math.floor(255 * (coeffs[i] + 1) / 2) // clamp to [0,255]
         data[4 * i + 0] = value
         data[4 * i + 1] = value
         data[4 * i + 2] = value
