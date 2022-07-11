@@ -6,9 +6,11 @@
 // THREEJS COORDINATION SYSTEM: Y IS UP
 
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-const createHeightmapMesh = (solver) => {
+const createHeightmapMesh = (solver, options = {}) => {
   const { width, height, coeffs } = solver;
+  const scale = options.scale || 1;
 
   const color = new THREE.TextureLoader().load(
     'textures/Wood066_1K_Color.jpg'
@@ -33,7 +35,7 @@ const createHeightmapMesh = (solver) => {
   position.usage = THREE.DynamicDrawUsage;
 
   for ( let i = 0; i < position.count; i ++ ) {
-    const z = coeffs[i];
+    const z = coeffs[i] * scale;
     position.setZ( i, z );
   }
 
@@ -44,14 +46,15 @@ const createHeightmapMesh = (solver) => {
   return mesh
 }
 
-const updateMesh = (solver, mesh) => {
+const updateMesh = (solver, mesh, options = {}) => {
   const { coeffs } = solver
   const { geometry } = mesh
+  const scale = options.scale || 1
 
   const position = geometry.attributes.position;
 
   for ( let i = 0; i < position.count; i ++ ) {
-    const z = coeffs[i];
+    const z = coeffs[i] * scale;
     position.setZ( i, z );
   }
 
@@ -61,7 +64,10 @@ const updateMesh = (solver, mesh) => {
 
 export default {
   name: 'SolverHeightmap',
-  props: ['solver'],
+  props: [
+    'solver',
+    'options'
+  ],
   data() {
     return {
       // Don't register THREE elements with reactivity system!
@@ -81,12 +87,15 @@ export default {
     this.camera.position.set(cameraX, cameraY, 0)
     this.camera.lookAt(0, 0, 0)
 
+    const orbit = new OrbitControls(this.camera, canvas)
+    this.orbit = orbit
+
     const ambientLight = new THREE.AmbientLight( 0xffffff, 3 );
     this.scene.add(ambientLight)
 
     const directionalLight = new THREE.DirectionalLight( 0xffffff, 2 );
     directionalLight.castShadow = true
-    directionalLight.position.set(-4.4, 1, 2.2)
+    directionalLight.position.set(-4.4, 1.3, 2.2)
     directionalLight.shadow.bias = -0.003
     directionalLight.shadow.mapSize.width = 4096
     directionalLight.shadow.mapSize.height = 4096
@@ -112,15 +121,14 @@ export default {
     this.renderer.shadowMap.type = THREE.PCFShadowMap
     this.renderer.physicallyCorrectLights = true
 
-
-    this.mesh = createHeightmapMesh(this.solver)
+    this.mesh = createHeightmapMesh(this.solver, this.options)
     this.scene.add(this.mesh)
 
     this.animate()
   },
   watch: {
     'solver.n'() {
-      updateMesh(this.solver, this.mesh)
+      updateMesh(this.solver, this.mesh, this.options)
     }
   },
   methods: {
@@ -128,6 +136,7 @@ export default {
       requestAnimationFrame(this.animate)
 
       this.mesh.rotation.z += 0.001
+      this.orbit.update()
 
       this.renderer.render(this.scene, this.camera)
     }

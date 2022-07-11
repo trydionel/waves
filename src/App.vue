@@ -1,40 +1,53 @@
 <template>
   <div class="container">
-    <div class="visualization">
-      <SolverOutput :solver="solver" v-if="mode == '2D'"/>
-      <SolverHeightmap :solver="solver" v-if="mode == '3D'" />
+    <div class="visualization" v-if="output">
+      <SolverTexture :solver="output" v-if="mode == '2D'" />
+      <SolverHeightmap :solver="output" :options="heightmap" v-if="mode == '3D'" />
     </div>
 
     <div class="controls">
       <div>
-        <label for="resolution">Resolution</label>
-        <input type="range" name="resolution" min="10" max="100" v-model="options.resolution" />
-        {{ options.resolution }}
+        <div>
+          <label for="resolution">Resolution</label>
+          <input type="range" name="resolution" min="10" max="100" v-model="options.resolution" />
+          {{ options.resolution }}
+        </div>
+
+        <div>
+          <label for="gamma">Gamma</label>
+          <input type="range" name="gamma" min="0.01" max="0.5" step="0.01" v-model="options.gamma" />
+          {{ options.gamma }}
+        </div>
+
+        <div>
+          <label for="velocity">Velocity</label>
+          <input type="range" name="velocity" min="0.1" max="5" step="0.1" v-model="options.velocity" />
+          {{ options.velocity }}
+        </div>
+
+        <div v-if="output">
+          Step: {{ output.n }}
+          &nbsp;
+          <button @click="run" :disabled="running">Run</button>
+          <button @click="stop" :disabled="!running">Stop</button>
+          <button @click="reset">Reset</button>
+        </div>
       </div>
 
       <div>
-        <label for="gamma">Gamma</label>
-        <input type="range" name="gamma" min="0.01" max="0.5" step="0.01" v-model="options.gamma" />
-        {{ options.gamma }}
-      </div>
+        <div>
+          View mode:
+          &nbsp;
+          <button @click="mode = '2D'">2D</button>
+          <button @click="mode = '3D'">3D</button>
+        </div>
 
-      <div>
-        <label for="velocity">Velocity</label>
-        <input type="range" name="velocity" min="0.1" max="5" step="0.1" v-model="options.velocity" />
-        {{ options.velocity }}
-      </div>
+        <div>
+          <label for="scale">Scale</label>
+          <input type="range" name="scale" min="0.1" max="1" step="0.1" v-model="heightmap.scale" />
+          {{ heightmap.scale }}
+        </div>
 
-      <div>
-        Step: {{ solver.n }}
-        &nbsp;
-        <button @click="run" :disabled="running">Run</button>
-        <button @click="stop" :disabled="!running">Stop</button>
-        <button @click="reset">Reset</button>
-      </div>
-
-      <div>
-        <button @click="mode = '2D'">2D</button>
-        <button @click="mode = '3D'">3D</button>
       </div>
 
     </div>
@@ -42,29 +55,36 @@
 </template>
 
 <script>
-import SolverOutput from './components/SolverOutput.vue'
-import { Solver } from './solver'
+import SolverTexture from './components/SolverTexture.vue'
 import SolverHeightmap from './components/SolverHeightmap.vue'
 
 export default {
   name: 'App',
   components: {
-    SolverOutput,
+    SolverTexture,
     SolverHeightmap
-},
+  },
   data() {
     return {
-      solver: null,
+      output: null,
       running: false,
       mode: '2D',
       options: {
         resolution: 50,
         gamma: 0.02,
         velocity: 2
+      },
+      heightmap: {
+        scale: 1
       }
     }
   },
   beforeMount() {
+    this.worker = new Worker(new URL('workers/solver.js', import.meta.url));
+    this.worker.onmessage = (message) => {
+      this.handleMessage(message)
+    };
+
     this.buildSolver()
   },
   watch: {
@@ -78,10 +98,26 @@ export default {
   methods: {
     buildSolver() {
       const { gamma, velocity, resolution } = this.options
-      this.solver = new Solver(resolution, resolution, {
-        gamma,
-        velocity
-      })
+      this.worker.postMessage({
+        event: 'init',
+        payload: {
+          width: resolution,
+          height: resolution,
+          specs: {
+            velocity,
+            gamma
+          }
+        }
+      });
+    },
+    handleMessage({ data: { event, payload }}) {
+      switch (event) {
+        case 'tick:complete':
+          this.output = payload
+          break;
+        default:
+          throw new Error(`Unrecognized event '${event}'`)
+      }
     },
     run() {
       this.running = true
@@ -99,15 +135,20 @@ export default {
         this.request = requestAnimationFrame(this.tick)
       }
 
-      if (this.solver.n % 500 === 0) {
-        this.solver.addSource(
-          Math.floor(Math.random() * this.solver.width),
-          Math.floor(Math.random() * this.solver.height),
-          Math.random()
-        )
+      if (Math.random() < 0.05) {
+        this.worker.postMessage({
+          event: 'addSource',
+          payload: {
+            x: Math.floor(Math.random() * this.output.width),
+            y: Math.floor(Math.random() * this.output.height),
+            mag: Math.random()
+          }
+        })
       }
 
-      this.solver.step()
+      this.worker.postMessage({
+        event: 'tick'
+      })
     }
   }
 }
@@ -139,5 +180,8 @@ export default {
 .container .controls {
   padding: 24px;
   border-top: 1px solid gray;
+  display: flex;
+  justify-content: center;
+  gap: 48px;
 }
 </style>

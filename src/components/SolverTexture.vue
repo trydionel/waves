@@ -5,12 +5,10 @@
 </template>
 
 <script>
-// import SolverVisualizer from './SolverVisualizer.vue'
 import { defineComponent } from "vue"
 
 export default defineComponent({
   components: {
-    // SolverVisualizer
   },
   props: ['solver'],
   data() {
